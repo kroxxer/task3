@@ -1,6 +1,7 @@
 <?php
 
 require_once "ConsoleTable.php";
+
 function hasParameters():bool {
     global $argv;
     $isValid = true;
@@ -87,28 +88,27 @@ function printMenuChoice(array $parameters):void {
     print_r("? - help".PHP_EOL);
 }
 
-function printHelpTable(array $mapBeats, array $parameters):void {
-    $len = strlen($parameters[1]);
-    $lenUnderline = strlen($parameters[1]) + 2;
-    $stringUnderlineFormated = sprintf("+%{$lenUnderline}s", "-");
-    $stringFormated = sprintf("| %{$len}s ", " ");
+function printHelpTable(ConsoleTable $consoleTable, array $headers, array $mapBeats):void {
 
-    foreach ($mapBeats as $key => $value){
-        $stringFormated .= "| %s ";
-        $lenUnderline = strlen($key) + 2;
-        $stringUnderlineFormated .= sprintf("+%{$lenUnderline}s", "-");
+    $consoleTable->showAllBorders();
+    $consoleTable->setIndent();
+    $consoleTable->setHeaders($headers);
+
+    unset($headers[0]);
+
+    foreach ($headers as $row) {
+        $rowLine = array();
+        $rowLine[] = $row;
+        foreach ($headers as $column){
+            $rowLine[] = $mapBeats[$row][$column];
+        }
+        $consoleTable->addRow($rowLine);
     }
-    $stringFormated .= "|".PHP_EOL;
-    $stringUnderlineFormated .= "+".PHP_EOL;
-
-    printf($stringUnderlineFormated);
-    printf($stringFormated, ...$parameters);
-    printf($stringUnderlineFormated);
+    $consoleTable->display();
 }
 
 
 function main(): void {
-
     if (!hasParameters() || !hasUniqueParameters())
         exit(-1);
 
@@ -126,8 +126,10 @@ function main(): void {
     $hmacTurn = hash_hmac($hashHmacAlgorithm, $playerChoice, $randomKey);
     print_r($hmacTurn.PHP_EOL);
     $mapBeats = createMapBeats($parameters);
-
-    printHelpTable($mapBeats, $parameters);
+    $consoleTable = new ConsoleTable();
+    $parametersCopy = $parameters;
+    array_unshift($parametersCopy, " ");
+    printHelpTable($consoleTable, $parametersCopy, $mapBeats);
 }
 
 main();
