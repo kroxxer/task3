@@ -155,8 +155,8 @@ function main(): void {
                 if (!isset($choicesHelp[$playerChoiceHelp])){
                     clearScreen();
                     print_r("Invalid input" . PHP_EOL);
-                    continue;
                 } elseif ($choices[$playerChoiceHelp] === $choices["0"]){
+                    clearScreen();
                     $isHelpRun = false;
                 }
             }
