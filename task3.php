@@ -127,10 +127,11 @@ function main(): void {
     $consoleTable = new ConsoleTable();
     fillHelpTable($consoleTable, $parameters, $mapBeats);
     $computerChoice = strval(random_int(1, count($parameters)));
-    $hmacTurn = generateHMAC($secretKey, $parameters[$computerChoice]);
+    $hmacTurnComputer = generateHMAC($secretKey, $parameters[$computerChoice]);
+    $hmacTurnPlayer = "";
 
     while ($isRun) {
-        print_r("Hmac : " . PHP_EOL . "{$hmacTurn}" . PHP_EOL);
+        print_r("Hmac : " . PHP_EOL . "{$hmacTurnComputer}" . PHP_EOL);
         $choices = $parameters;
         addChoices($choices);
         printMenuChoice($choices);
@@ -142,9 +143,10 @@ function main(): void {
             continue;
         }
 
-        $hmacTurn = generateHMAC($secretKey, $choices[$playerChoice]);
+        $hmacTurnPlayer = generateHMAC($secretKey, $choices[$playerChoice]);
 
         if ($choices[$playerChoice] === $choices["?"]){
+            clearScreen();
             $isHelpRun = true;
             while ($isHelpRun) {
                 $consoleTable->display();
@@ -170,7 +172,7 @@ function main(): void {
         }
     }
 
-    print_r("Hmac key " . PHP_EOL . ": {$hmacTurn}" . PHP_EOL);
+    print_r("Hmac key : ".PHP_EOL . "$hmacTurnPlayer" . PHP_EOL);
 }
 
 main();
