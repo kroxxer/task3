@@ -32,7 +32,7 @@ function hasUniqueParameters():bool {
 
     foreach ($valuesCount as $key => $value) {
         if ($value > 1) {
-            print_r("Repeated paramater {$key} : {$value} times" . PHP_EOL);
+            print_r("Repeated parameter {$key} : {$value} times" . PHP_EOL);
             $isValid = false;
             break;
         }
@@ -79,17 +79,20 @@ function clearScreen():void {
         system('clear');
     }
 }
-function printMenuChoice(array $parameters):void {
-    print_r("Available Moves".PHP_EOL);
-    foreach ($parameters as $key => $value){
-        print_r("{$key} - {$value}".PHP_EOL);
-    }
-    print_r("0 - exit".PHP_EOL);
-    print_r("? - help".PHP_EOL);
+
+function addChoices(array &$parameters):void {
+    $parameters["0"] = "exit";
+    $parameters["?"] = "help";
 }
 
-function printHelpTable(ConsoleTable $consoleTable, array $headers, array $mapBeats):void {
-
+function printMenuChoice(array $choices):void {
+    print_r("Available Moves" . PHP_EOL);
+    foreach ($choices as $key => $value){
+        print_r("{$key} - {$value}" . PHP_EOL);
+    }
+}
+function fillHelpTable(ConsoleTable $consoleTable, array $headers, array $mapBeats):void {
+    array_unshift($headers, " ");
     $consoleTable->showAllBorders();
     $consoleTable->setIndent();
     $consoleTable->setHeaders($headers);
@@ -104,32 +107,70 @@ function printHelpTable(ConsoleTable $consoleTable, array $headers, array $mapBe
         }
         $consoleTable->addRow($rowLine);
     }
-    $consoleTable->display();
 }
 
+function generateHMAC(string $secretKey, string $choice):string {
+    $hashHmacAlgorithm = hash_hmac_algos()[11];
+    $hmacTurn = hash_hmac($hashHmacAlgorithm, $choice, $secretKey);
+
+    return  $hmacTurn;
+}
 
 function main(): void {
     if (!hasParameters() || !hasUniqueParameters())
         exit(-1);
 
     $parameters = alignParameters();
-
-    $hashHmacAlgorithm = hash_hmac_algos()[11];
-    $randomKey = random_bytes(32);
-    $computerChoice = random_int(1,count($parameters));
-    $hmacTurn = hash_hmac($hashHmacAlgorithm, strval($computerChoice), $randomKey);
-
-    print("Computer choice : {$computerChoice}". PHP_EOL . "Hmac : {$hmacTurn}" . PHP_EOL);
-    foreach ($parameters as $key => $value)
-        print("{$key} : {$value}" . PHP_EOL);
-    $playerChoice = readline("Player choice : ");
-    $hmacTurn = hash_hmac($hashHmacAlgorithm, $playerChoice, $randomKey);
-    print_r($hmacTurn.PHP_EOL);
+    $secretKey = random_bytes(32);
+    $isRun = true;
     $mapBeats = createMapBeats($parameters);
     $consoleTable = new ConsoleTable();
-    $parametersCopy = $parameters;
-    array_unshift($parametersCopy, " ");
-    printHelpTable($consoleTable, $parametersCopy, $mapBeats);
+    fillHelpTable($consoleTable, $parameters, $mapBeats);
+    $computerChoice = strval(random_int(1, count($parameters)));
+    $hmacTurn = generateHMAC($secretKey, $parameters[$computerChoice]);
+
+    while ($isRun) {
+        print_r("Hmac : " . PHP_EOL . "{$hmacTurn}" . PHP_EOL);
+        $choices = $parameters;
+        addChoices($choices);
+        printMenuChoice($choices);
+        $playerChoice = readline("Player choice : ");
+
+        if (!isset($choices[$playerChoice])){
+            clearScreen();
+            print_r("Invalid input" . PHP_EOL);
+            continue;
+        }
+
+        $hmacTurn = generateHMAC($secretKey, $choices[$playerChoice]);
+
+        if ($choices[$playerChoice] === $choices["?"]){
+            $isHelpRun = true;
+            while ($isHelpRun) {
+                $consoleTable->display();
+                $choicesHelp = array("0" => "exit");
+                printMenuChoice($choicesHelp);
+                $playerChoiceHelp = readline("Player choice : ");
+
+                if (!isset($choicesHelp[$playerChoiceHelp])){
+                    clearScreen();
+                    print_r("Invalid input" . PHP_EOL);
+                    continue;
+                } elseif ($choices[$playerChoiceHelp] === $choices["0"]){
+                    $isHelpRun = false;
+                }
+            }
+        } elseif ($choices[$playerChoice] === $choices["0"]){
+            $isRun = false;
+        } else {
+            print_r("Your move : {$choices[$playerChoice]}" . PHP_EOL);
+            print_r("Computer move : {$choices[$computerChoice]}" . PHP_EOL);
+            print_r("You {$mapBeats[$choices[$playerChoice]][$choices[$computerChoice]]}" . PHP_EOL);
+            $isRun = false;
+        }
+    }
+
+    print_r("Hmac key " . PHP_EOL . ": {$hmacTurn}" . PHP_EOL);
 }
 
 main();
